@@ -6,35 +6,46 @@ defined('_JEXEC') or die;
     <h2><?php echo JText::_('MOD_TITLE'); ?></h2>
     <p><?php echo JText::_('MOD_DESCRIPTION'); ?></p>
 </div>
+<div class="custom-tooltip"></div>
+
 <div class="translit-main">
     <div class="tab">
-      <button class="tablinks active tr-inline"  onclick="openTab(event, 'tr_inline')"><i class="fa fa-pencil-square-o fa-lg"></i> <?php echo JText::_('MOD_INLINE_MODE'); ?></button>
-      <button class="tablinks tr-file" onclick="openTab(event, 'tr_file')"><i class=" fa fa-file-text-o fa-lg"></i> <?php echo JText::_('MOD_FILE_MODE'); ?></button>
+      <button class="tablinks active tr-inline"  onclick="openTab(event, 'tr_inline')" data-tooltip="<?php echo JText::_('MOD_INLINE_MODE'); ?>" title="<?php echo JText::_('MOD_INLINE_MODE'); ?>"><i class="fa fa-pencil-square-o fa-lg"></i> <?php echo JText::_('MOD_INLINE_MODE'); ?></button>
+      <button class="tablinks tr-file" onclick="openTab(event, 'tr_file')" data-tooltip="<?php echo JText::_('MOD_FILE_MODE'); ?>" title="<?php echo JText::_('MOD_FILE_MODE'); ?>"><i class=" fa fa-file-text-o fa-lg"></i> <?php echo JText::_('MOD_FILE_MODE'); ?></button>
     </div>
 
     <!-- Tab content -->
     <div id="tr_inline" style="display: block" class="tabcontent">
         <div class="g-grid">
             <div class="g-block size-46">
-                <select class="select" id="inline_select_from">
+                <select class="select" id="inline_select_from" title="<?php echo JText::_('MOD_SELECT_LANG'); ?>" data-tooltip="<?php echo JText::_('MOD_SELECT_LANG'); ?>">
                     <option value="crh-cyrl" selected><?php echo JText::_('MOD_CYRILLIC'); ?></option>
                     <option value="crh-latn"><?php echo JText::_('MOD_LATIN'); ?></option>
                 </select>
                 <div class="grow-wrap"> 
-                    <textarea id="translit_inp" placeholder="<?php echo JText::_('MOD_TEXT_PLACEHOLDER'); ?>"></textarea>
+                    <textarea
+                            id="translit_inp"
+                            placeholder="<?php echo JText::_('MOD_TEXT_PLACEHOLDER'); ?>"
+                            title="<?php echo JText::_('MOD_TEXT_PLACEHOLDER'); ?>"
+                            data-tooltip="<?php echo JText::_('MOD_TEXT_PLACEHOLDER'); ?>">
+                    </textarea>
                     <i class="char-counter"></i>
-                    <a class="clear"><i class="fa fa-close  fa-lg"></i></a>
+                    <a class="clear" data-tooltip="<?php echo JText::_('MOD_CLEAR_FIELDS'); ?>" title="<?php echo JText::_('MOD_CLEAR_FIELDS'); ?>"><i class="fa fa-close  fa-lg"></i></a>
                 </div>
             </div>
-            <div class="g-block size-8" style="text-align: center"><a id="switch_langs"><i class="fa fa-exchange fa-lg"></i></a></div>
+            <div class="g-block size-8" style="text-align: center">
+                <a class="has-tooltip" id="switch_langs" data-tooltip="<?php echo JText::_('MOD_SWAP_DIRECTION'); ?>">
+                    <i class="fa fa-exchange fa-lg"></i>
+                </a>
+            </div>
             <div class="g-block size-46">
-                <select class="select" id="inline_select_to">
+                <select class="select has-tooltip" id="inline_select_to" data-tooltip="<?php echo JText::_('MOD_SELECT_LANG'); ?>" title="<?php echo JText::_('MOD_SELECT_LANG'); ?>">
                     <option value="crh-cyrl" ><?php echo JText::_('MOD_CYRILLIC'); ?></option>
                     <option value="crh-latn" selected><?php echo JText::_('MOD_LATIN'); ?></option>
                 </select>
                 <div class="grow-wrap"> 
-                    <textarea id="translit_out"  autosize></textarea>
-                    <a class="copy-to-clip"><i class="fa fa-copy fa-lg"></i></a>
+                    <textarea id="translit_out" title="<?php echo JText::_('MOD_TRANSLITERATION_RESULT'); ?>" data-tooltip="<?php echo JText::_('MOD_TRANSLITERATION_RESULT'); ?>" autosize></textarea>
+                    <a class="copy-to-clip has-tooltip" data-tooltip="<?php echo JText::_('MOD_COPY_RESULT'); ?>" title="<?php echo JText::_('MOD_COPY_RESULT'); ?>"><i class="fa fa-copy fa-lg"></i></a>
                 </div>
             </div>
         </div>
@@ -106,7 +117,7 @@ defined('_JEXEC') or die;
     
     
 
-</div> 
+</div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
 <script>
@@ -114,8 +125,49 @@ defined('_JEXEC') or die;
     var currentStep = 0;
     
     function init(){
-        initControls()
+        initControls();
+        jQuery(document).ready(function() {
+            initTooltips();
+        });
     }
+
+    function initTooltips() {
+        const tooltip = document.querySelector('.custom-tooltip');
+
+        // Знаходимо всі елементи з атрибутом data-tooltip
+        document.querySelectorAll('[data-tooltip]').forEach(element => {
+            element.addEventListener('mouseenter', e => {
+                const text = e.target.getAttribute('data-tooltip');
+                tooltip.textContent = text;
+                tooltip.classList.add('visible');
+
+                // Позиціонування підказки
+                const rect = e.target.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+
+                let top = rect.top - tooltipRect.height - 10;
+                let left = rect.left + (rect.width - tooltipRect.width) / 2;
+
+                // Перевірка виходу за межі екрану
+                if (top < 0) {
+                    top = rect.bottom + 10;
+                }
+                if (left < 0) {
+                    left = 10;
+                } else if (left + tooltipRect.width > window.innerWidth) {
+                    left = window.innerWidth - tooltipRect.width - 10;
+                }
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            });
+
+            element.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+        });
+    }
+
     function initControls(){
         jQuery('#translit_inp').on('input', (e) => { return transliterate() });
         jQuery('#transliterate_file').on('click', (e) => { uploadFiles(e) });
@@ -336,7 +388,7 @@ defined('_JEXEC') or die;
             jQuery('#uploadControl').hide()
         }
     }
-    function copyToClipboard (e) {
+    function copyToClipboardOld (e) {
       // Get the text field
       
       var copyText = jQuery(e.target).closest('.grow-wrap').find('textarea').val()
@@ -345,13 +397,92 @@ defined('_JEXEC') or die;
        // Copy the text inside the text field
       navigator.clipboard.writeText(copyText);
     
-    } 
+    }
+    function copyToClipboard(e) {
+        var copyText = jQuery(e.target).closest('.grow-wrap').find('textarea').val();
+
+        navigator.clipboard.writeText(copyText).then(function() {
+            // Create notification element if it doesn't exist
+            if (!document.querySelector('.copy-notification')) {
+                const notification = document.createElement('div');
+                notification.className = 'copy-notification';
+                notification.textContent = '<?php echo JText::_('MOD_COPY_NOTIFICATION'); ?>';
+                document.body.appendChild(notification);
+            }
+
+            const notification = document.querySelector('.copy-notification');
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
+
+            // Remove notification after animation
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
+        }).catch(function(err) {
+            console.error('Could not copy text: ', err);
+        });
+    }
     jQuery( document ).ready(function() {
         init()
     });
     
 </script>
 <style>
+
+    .custom-tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+        max-width: 250px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .custom-tooltip.visible {
+        opacity: 1;
+    }
+
+    /* Додайте цей клас до елементів, які потребують підказки */
+    .has-tooltip {
+        position: relative;
+        cursor: help;
+    }
+
+    .copy-notification {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(36, 160, 206, 0.9);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        display: none;
+        z-index: 99999;
+        animation: fadeInOut 2s ease-in-out;
+        pointer-events: none;
+        text-align: center;
+        min-width: 120px;
+        backdrop-filter: blur(4px);
+    }
+
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
+
 .translit-page #g-features{
     background: #f4f5f7;
     min-height: 70vh;
