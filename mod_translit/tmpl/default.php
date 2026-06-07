@@ -62,12 +62,10 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
 
             <div id="uploadControl" style="display: none">
                 <hr>
-                <div>
-                    <label for="file_select_to"><?php echo JText::_('MOD_TRANSLATE_TO'); ?> </label>
-                    <select class="select" id="file_select_to">
-                        <option value="crh-cyrl" ><?php echo JText::_('MOD_CYRILLIC'); ?></option>
-                        <option value="crh-latn" selected><?php echo JText::_('MOD_LATIN'); ?></option>
-                    </select>
+                <div class="translit-file-direction" aria-hidden="true">
+                    <?php echo JText::_('MOD_CYRILLIC'); ?>
+                    <i class="fa fa-long-arrow-right fa-lg"></i>
+                    <?php echo JText::_('MOD_LATIN'); ?>
                 </div>
                 <div style="text-align: center;  padding: 10px;">
                     <button id="transliterate_file" ><i class="fa fa-check fa-lg"></i> <?php echo JText::_('MOD_TRANSLITE_GO'); ?></button>
@@ -334,7 +332,8 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         jQuery.ajax({
             url: "/index.php?option=com_ajax&module=translit&method=transliterateUploaded&format=json",
             type: "POST",
-            data: {hash: hash, toVariant: jQuery('#file_select_to').val(), part: part},
+            // File mode is one-directional too (Cyrillic -> Latin), like the inline tab.
+            data: {hash: hash, toVariant: 'crh-latn', part: part},
             error: function (e, response) {
                 jQuery('#transliterate_file').show()
                 jQuery('#transliterate_file i').attr('class', 'fa fa-check fa-lg');
@@ -778,6 +777,16 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
     .translit-arrow{
         justify-content: center;
         color: #0f97df;
+    }
+    /* File tab: static one-way direction label (Cyrillic -> Latin). */
+    .translit-file-direction{
+        text-align: center;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    .translit-file-direction .fa{
+        color: #0f97df;
+        margin: 0 6px;
     }
     /* Loading spinner shown inside the output field while a request is in
        flight, so a slow server response does not look frozen (C12). */
