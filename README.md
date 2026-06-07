@@ -6,7 +6,8 @@ typed directly into the page and for uploaded documents (`.docx`, `.txt`), prese
 the original formatting of Word files.
 
 - Convert direction `crh-cyrl` ⇄ `crh-latn` (Cyrillic ⇄ Latin).
-- Inline mode: live transliteration of pasted/typed text via AJAX.
+- Inline mode: live transliteration of pasted/typed text **in the browser** (a JS port
+  of the PHP engine), with the server `com_ajax` endpoint kept only as a fallback.
 - File mode: upload one or more `.docx` / `.txt` files, transliterate them in the
   background, and download the result as a single `.zip` archive.
 - On-screen **virtual keyboard** for Crimean Tatar Latin and Cyrillic special letters.
@@ -93,17 +94,35 @@ contents of `mod_translit/`, and upload via **System → Install → Extensions*
 
 ```
 Browser (tmpl/default.php, jQuery)
-        │  com_ajax POST requests
-        ▼
-ModTranslitHelper (helper.php)
-        │  orchestrates text / DOCX / TXT jobs, file I/O, zipping
-        ▼
-TranslitProcessor (translit/TranslitProcessor.php)
-        │  pure transliteration engine
-        ├── constants.inc            – character classes (alphabets, vowels, consonants)
-        ├── exeptions.inc            – word-level exception maps (irregular spellings)
-        └── regular_expressions.inc  – ordered regex rules + fallback char maps
+        │
+        ├── inline text → client-side engine (assets/mod_translit.js
+        │                 + assets/translit-data.js)   ◀── default, no network
+        │
+        └── files / fallback → com_ajax POST requests
+                              ▼
+                ModTranslitHelper (helper.php)
+                              │  orchestrates DOCX / TXT jobs, file I/O, zipping
+                              ▼
+                TranslitProcessor (translit/TranslitProcessor.php)
+                              │  pure transliteration engine (source of truth)
+                              ├── constants.inc            – character classes (alphabets, vowels, consonants)
+                              ├── exeptions.inc            – word-level exception maps (irregular spellings)
+                              └── regular_expressions.inc  – ordered regex rules + fallback char maps
 ```
+
+### Client-side engine (`assets/mod_translit.js`)
+
+Inline transliteration runs entirely in the browser. `assets/mod_translit.js` is a
+faithful JS port of `TranslitProcessor` (same exceptions → tokenize → ordered regex →
+`strtr` fallback pipeline). It consumes `assets/translit-data.js`, an **auto-generated**
+file that exports the exact rules/exceptions/character-classes from the PHP `.inc` files
+so the JS output is byte-for-byte identical to PHP. This removes the per-keystroke
+server round-trips that previously dominated input latency. If the engine fails to load,
+`tmpl/default.php` falls back to the `transliterate` `com_ajax` endpoint. Document
+(`.docx`/`.txt`) processing still runs server-side via PHPWord.
+
+> **Do not edit `assets/translit-data.js` by hand** — it is generated. After changing any
+> `.inc` file, regenerate it and re-run the parity test (see [Development](#development)).
 
 ### Transliteration engine (`TranslitProcessor`)
 
@@ -178,13 +197,17 @@ mod_translit/
 ├── index.html                # Empty index (directory-listing guard)
 ├── assets/
 │   ├── mod_translit.css
-│   └── mod_translit.js
+│   ├── mod_translit.js       # Client-side transliteration engine (JS port of the PHP one)
+│   └── translit-data.js      # AUTO-GENERATED rules/exceptions export (do not edit by hand)
 ├── language/
 │   ├── en-GB/ uk-UA/ tr-TR/   # *.ini (front-end) and *.sys.ini (admin); tr-TR = Crimean Tatar Latin
 ├── tmpl/
 │   └── default.php           # Markup + inline JS/CSS for the widget
+├── test/
+│   └── parity.js             # 0-diff gate: asserts JS engine == PHP engine
 └── translit/
-    ├── TranslitProcessor.php # Transliteration engine
+    ├── TranslitProcessor.php # Transliteration engine (source of truth)
+    ├── export_rules.php      # Build step: exports the .inc data to assets/translit-data.js
     ├── constants.inc         # Alphabet / phonetic character classes
     ├── exeptions.inc         # Word-level exception maps
     └── regular_expressions.inc # Ordered regex rules + fallback char maps
@@ -204,8 +227,21 @@ not Turkish). To add a language:
 ## Development
 
 - **Lint PHP**: `php -l mod_translit/helper.php` (repeat for changed `.php` files).
-- **No build step** for the front-end; CSS/JS are inlined in `tmpl/default.php`
-  (`assets/mod_translit.js` is currently empty).
+- **Regenerate the client-side data** after editing any `translit/*.inc` file:
+  ```bash
+  cd mod_translit/translit
+  php export_rules.php > ../assets/translit-data.js
+  ```
+  This keeps the browser engine in sync with the PHP source of truth.
+- **Parity test (quality gate)** – proves the JS engine and PHP engine produce identical
+  output. Run it before every commit/release that touches the engine, rules, or
+  exceptions; it must report **0 diffs**:
+  ```bash
+  cd mod_translit
+  node test/parity.js          # requires php + node on PATH
+  ```
+- The inline widget JS/CSS still live in `tmpl/default.php`; only the transliteration
+  engine has been extracted to `assets/`.
 - Keep tags/attributes untouched when changing the DOCX pipeline — only text nodes
   should ever be transliterated.
 
@@ -229,13 +265,17 @@ repository and have been corrected here:
 - **Complete localization** – all `MOD_*` keys used by the template are now defined in
   `en-GB`, `uk-UA`, and `tr-TR` (Crimean Tatar Latin), so a fresh install renders real
   labels instead of raw keys.
+- **Client-side inline transliteration** – inline text is now transliterated in the
+  browser by a JS port of the PHP engine (`assets/mod_translit.js` + generated
+  `assets/translit-data.js`), eliminating ~one server request per keystroke. A parity
+  test (`test/parity.js`) guarantees the JS output stays byte-for-byte identical to PHP;
+  the server endpoint remains as a fallback. The previously empty `assets/mod_translit.js`
+  is now the engine.
 
 ## Known issues & recommended improvements
 
 Still open, good candidates for follow-up:
 
-- **Empty `assets/mod_translit.js`** – the inline `<script>` in `tmpl/default.php`
-  could be moved here and referenced via `Joomla\CMS\HTML\HTMLHelper` for caching/CSP.
 - **jQuery from a CDN** – `tmpl/default.php` loads jQuery from `ajax.googleapis.com`.
   Prefer Joomla's bundled jQuery (`HTMLHelper::_('jquery.framework')`).
 - **Default `toVariant`** – the AJAX helpers default to `crh-cyr`, which is not a
