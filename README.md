@@ -9,6 +9,9 @@ the original formatting of Word files.
 - Inline mode: live transliteration of pasted/typed text via AJAX.
 - File mode: upload one or more `.docx` / `.txt` files, transliterate them in the
   background, and download the result as a single `.zip` archive.
+- On-screen **virtual keyboard** for Crimean Tatar Latin and Cyrillic special letters.
+- **Full-screen** editing view and a **share link** that encodes the current text and
+  direction in the URL query string.
 
 > Powered by a rule-based engine (character maps + regular expressions) derived from
 > the Crimean Tatar orthography rules, adapted from the MediaWiki `crh` language converter.
@@ -65,10 +68,26 @@ This `vendor/` directory is intentionally **not** committed; generate it at buil
 The module renders two tabs (see `tmpl/default.php`):
 
 - **Text** – type or paste text; the source script is auto-detected from the first
-  letter and the result updates live as you type.
+  letter and the result updates live as you type. Extra controls: virtual keyboard
+  (special characters), full-screen view, clear, copy result, and a share link that
+  stores the text and direction in the URL (`?text=…&lang=…&lang2=…`) so the page can
+  re-create the transliteration when opened later.
 - **Files** – select `.docx`/`.txt` files, choose the target script, and start the
   job. Large documents are split into parts and processed sequentially with a
   progress bar; the finished files are returned as a single `.zip`.
+
+### Deploying changes to a live Joomla site
+
+This sandbox cannot reach your server, so deployment is manual. For the files in this
+module, the quickest path (no reinstall) is:
+
+1. Copy the changed files over FTP/SFTP into `<site_root>/modules/mod_translit/`
+   (e.g. `tmpl/default.php` and the `language/*/*.ini` files).
+2. In Joomla admin run **System → Clear Cache** — language strings are cached, so the
+   old text may persist until the cache is cleared.
+
+For a clean install/upgrade instead, generate `translit/vendor/` with Composer, zip the
+contents of `mod_translit/`, and upload via **System → Install → Extensions**.
 
 ## Architecture
 
@@ -190,18 +209,35 @@ not Turkish). To add a language:
 - Keep tags/attributes untouched when changing the DOCX pipeline — only text nodes
   should ever be transliterated.
 
+## Fixed in this branch
+
+The following issues were found by comparing the live production version with the
+repository and have been corrected here:
+
+- **Reflected XSS** – the template echoed `$_GET['text']` straight into a `<textarea>`.
+  Input is now read through Joomla's input filter and escaped with `htmlspecialchars`,
+  and the `lang`/`lang2` direction parameters are whitelisted to the known variants.
+- **Broken option pre-selection** – the direction `<select>`s emitted the invalid
+  attribute `select` (always, on every option); they now emit a single correct
+  `selected` based on the sanitized URL parameters.
+- **Output written with `.html()`** onto a `<textarea>` → switched to `.val()`.
+- **Duplicate jQuery `<script>`** include removed (it was loaded twice).
+- **Full-screen close handler** referenced out-of-scope variables (`ReferenceError`);
+  it now writes back to the real DOM nodes.
+- **Hard-coded / Russian UI strings** (`Пробел`, alert texts, swap-button title) moved
+  to language keys so every label follows the active site language.
+- **Complete localization** – all `MOD_*` keys used by the template are now defined in
+  `en-GB`, `uk-UA`, and `tr-TR` (Crimean Tatar Latin), so a fresh install renders real
+  labels instead of raw keys.
+
 ## Known issues & recommended improvements
 
-These were found while documenting the module and are good candidates for follow-up:
+Still open, good candidates for follow-up:
 
 - **Empty `assets/mod_translit.js`** – the inline `<script>` in `tmpl/default.php`
-  could be moved here and the file referenced via `Joomla\CMS\HTML\HTMLHelper` for
-  caching and CSP friendliness.
+  could be moved here and referenced via `Joomla\CMS\HTML\HTMLHelper` for caching/CSP.
 - **jQuery from a CDN** – `tmpl/default.php` loads jQuery from `ajax.googleapis.com`.
-  Prefer Joomla's bundled jQuery (`HTMLHelper::_('jquery.framework')`) to avoid a
-  third-party dependency and duplicate loads.
-- **Textarea output** – the inline result is written with `.html()` onto a
-  `<textarea>`; `.val()` (or `.text()`) is the correct API for form fields.
+  Prefer Joomla's bundled jQuery (`HTMLHelper::_('jquery.framework')`).
 - **Default `toVariant`** – the AJAX helpers default to `crh-cyr`, which is not a
   recognized variant (`crh-cyrl`/`crh-latn`) and falls through to "no change".
 - **`var_dump` on errors** – `helper.php` dumps exceptions to the response; use
@@ -210,6 +246,9 @@ These were found while documenting the module and are good candidates for follow
   the minimum the web server needs.
 - **Filename typo** – `exeptions.inc` (should be `exceptions.inc`); renaming requires
   updating the `include` in `TranslitProcessor.php`.
+- **`action="upload.php"`** on the file form has no matching file; uploads actually go
+  through the `com_ajax` `uploadFiles` endpoint, so the attribute is dead and could be
+  removed.
 
 ## License
 
