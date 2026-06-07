@@ -11,7 +11,20 @@ $lang2 = $app->input->getCmd('lang2', '');
 $variants = array('crh-cyrl', 'crh-latn');
 $from = in_array($lang1, $variants, true) ? $lang1 : 'crh-cyrl';
 $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
+
+// Client-side transliteration assets. The rule data (translit-data.js) is
+// generated from the PHP engine by translit/export_rules.php, and mod_translit.js
+// is a faithful JS port of TranslitProcessor, so inline text is converted in the
+// browser with no server round-trip (the com_ajax endpoint remains as a fallback
+// and is still used for document/file jobs). A filemtime cache-buster keeps the
+// bundle fresh after each regeneration.
+$modBase   = JUri::root(true) . '/modules/mod_translit/assets';
+$modDir    = __DIR__ . '/../assets';
+$dataVer   = @filemtime($modDir . '/translit-data.js') ?: '1';
+$engineVer = @filemtime($modDir . '/mod_translit.js') ?: '1';
 ?>
+<script src="<?php echo $modBase . '/translit-data.js?' . $dataVer; ?>"></script>
+<script src="<?php echo $modBase . '/mod_translit.js?' . $engineVer; ?>"></script>
 <div class="module-heading">
     <h2><?php echo JText::_('MOD_TITLE'); ?></h2>
     <p><?php echo JText::_('MOD_DESCRIPTION'); ?></p>
@@ -252,14 +265,30 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         var letterCount = value.replace(/\s+/g, '').length;
         jQuery('.char-counter').html(letterCount+"/5000 <?php echo JText::_('MOD_CHARS'); ?>");
         scheduleHistory(value);
+        // With the local engine there is no server to rate-limit, so convert
+        // instantly on every keystroke; only the server fallback needs the
+        // debounce to avoid a request per character.
+        var hasLocal = !!(window.ModTranslit && window.ModTranslit.instance);
         if(translitTimer){ clearTimeout(translitTimer); }
         translitTimer = setTimeout(function() {
             doTranslit(outSel, wrapSel, value);
-        }, immediate ? 0 : TRANSLIT_DELAY);
+        }, (immediate || hasLocal) ? 0 : TRANSLIT_DELAY);
     }
     function doTranslit(outSel, wrapSel, value) {
-        if(translitXhr){ translitXhr.abort(); }
-        if(wrapSel){ jQuery(wrapSel).addClass('is-loading'); }
+        // Prefer the local (client-side) engine: instant, no server round-trip.
+        // It is a faithful port of the server engine, so the result is identical.
+        if (window.ModTranslit && window.ModTranslit.instance) {
+            if (translitXhr) { translitXhr.abort(); translitXhr = null; }
+            try {
+                jQuery(outSel).val(window.ModTranslit.instance.translate(value, 'crh-latn'));
+                if (wrapSel) { jQuery(wrapSel).removeClass('is-loading'); }
+                return;
+            } catch (err) {
+                // Fall through to the server endpoint on any unexpected error.
+            }
+        }
+        if (translitXhr){ translitXhr.abort(); }
+        if (wrapSel){ jQuery(wrapSel).addClass('is-loading'); }
         translitXhr = jQuery.ajax({
             url: "/index.php?option=com_ajax&module=translit&method=transliterate&format=json",
             type: "POST",
