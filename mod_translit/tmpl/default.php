@@ -645,6 +645,8 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         bottom: 10px;
         right: 20px;
         color: gray;
+        /* Width fits the longest counter text ("5000/5000 ...") so the
+           neighbouring icons don't shift as the number of digits changes. */
         min-width: 9ch;
         text-align: right;
         font-style: normal;
@@ -942,8 +944,8 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         echo "
         <script>
         setTimeout(function() {
-            transliterate();
-        }, 1000);
+            transliterate(true);
+        }, 300);
         </script>
         ";
     }
