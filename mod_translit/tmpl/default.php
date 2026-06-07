@@ -26,28 +26,23 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
     <div id="tr_inline" style="display: block" class="tabcontent">
         <div class="g-grid">
             <div class="g-block size-46">
-                <select class="select" id="inline_select_from">
-                    <option value="crh-cyrl" <?php echo ($from === 'crh-cyrl') ? 'selected' : ''; ?>><?php echo JText::_('MOD_CYRILLIC'); ?></option>
-                    <option value="crh-latn" <?php echo ($from === 'crh-latn') ? 'selected' : ''; ?>><?php echo JText::_('MOD_LATIN'); ?></option>
-                </select>
+                <div class="translit-lang-label"><?php echo JText::_('MOD_CYRILLIC'); ?></div>
                 <div class="grow-wrap">
                     <textarea id="translit_inp" placeholder="<?php echo JText::_('MOD_TEXT_PLACEHOLDER'); ?>"><?php echo htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); ?></textarea>
-                    <a class="custom-to-clip3" title="<?php echo JText::_('MOD_A_TITLE3'); ?>"><i onclick="saveLink()" class="fa fa-link fa-lg"></i></a>
-                    <a class="custom-to-clip2" title="<?php echo JText::_('MOD_A_TITLE2'); ?>"><i class="fa fa-expand fa-lg"></i></a>
-                    <a class="custom-to-clip"  title="<?php echo JText::_('MOD_A_TITLE1'); ?>"><i id="toggleKeyboard" class="fa fa-keyboard fa-lg"></i></a>
-                    <i class="char-counter"></i>
-                    <a class="clear" title="<?php echo JText::_('MOD_A_TITLE4'); ?>"><i class="fa fa-close  fa-lg"></i></a>
+                    <a class="custom-to-clip3" role="button" tabindex="0" title="<?php echo JText::_('MOD_A_TITLE3'); ?>" aria-label="<?php echo JText::_('MOD_A_TITLE3'); ?>"><i onclick="saveLink()" class="fa fa-link fa-lg" aria-hidden="true"></i></a>
+                    <a class="custom-to-clip2" role="button" tabindex="0" title="<?php echo JText::_('MOD_A_TITLE2'); ?>" aria-label="<?php echo JText::_('MOD_A_TITLE2'); ?>"><i class="fa fa-expand fa-lg" aria-hidden="true"></i></a>
+                    <a class="custom-to-clip"  role="button" tabindex="0" title="<?php echo JText::_('MOD_A_TITLE1'); ?>" aria-label="<?php echo JText::_('MOD_A_TITLE1'); ?>"><i id="toggleKeyboard" class="fa fa-keyboard fa-lg" aria-hidden="true"></i></a>
+                    <i class="char-counter" aria-hidden="true"></i>
+                    <a class="clear" role="button" tabindex="0" title="<?php echo JText::_('MOD_A_TITLE4'); ?>" aria-label="<?php echo JText::_('MOD_A_TITLE4'); ?>"><i class="fa fa-close  fa-lg" aria-hidden="true"></i></a>
                 </div>
             </div>
-            <div class="g-block size-8" style="text-align: center"><a id="switch_langs" title="<?php echo JText::_('MOD_SWAP_DIRECTION'); ?>"><i class="fa fa-exchange fa-lg"></i></a></div>
+            <div class="g-block size-8 translit-arrow" style="text-align: center" aria-hidden="true"><i class="fa fa-long-arrow-right fa-lg"></i></div>
             <div class="g-block size-46">
-                <select class="select" id="inline_select_to">
-                    <option value="crh-cyrl" <?php echo ($to === 'crh-cyrl') ? 'selected' : ''; ?>><?php echo JText::_('MOD_CYRILLIC'); ?></option>
-                    <option value="crh-latn" <?php echo ($to === 'crh-latn') ? 'selected' : ''; ?>><?php echo JText::_('MOD_LATIN'); ?></option>
-                </select>
-                <div class="grow-wrap">
-                    <textarea id="translit_out" placeholder="<?php echo JText::_('MOD_TEXT_PLACEHOLDER2'); ?>"  autosize></textarea>
-                    <a class="copy-to-clip" title="<?php echo JText::_('MOD_A_TITLE5'); ?>"><i class="fa fa-copy fa-lg"></i></a>
+                <div class="translit-lang-label"><?php echo JText::_('MOD_LATIN'); ?></div>
+                <div class="grow-wrap" id="out_wrap">
+                    <textarea id="translit_out" placeholder="<?php echo JText::_('MOD_TEXT_PLACEHOLDER2'); ?>" readonly></textarea>
+                    <i class="translit-spinner fa fa-spinner fa-spin fa-lg" aria-hidden="true"></i>
+                    <a class="copy-to-clip" role="button" tabindex="0" title="<?php echo JText::_('MOD_A_TITLE5'); ?>" aria-label="<?php echo JText::_('MOD_A_TITLE5'); ?>"><i class="fa fa-copy fa-lg" aria-hidden="true"></i></a>
                 </div>
             </div>
         </div>
@@ -221,7 +216,7 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         initControls()
     }
     function initControls(){
-        jQuery('#translit_inp').on('input', (e) => { return transliterate() });
+        jQuery('#translit_inp').on('input', function(){ return transliterate() });
         jQuery('#transliterate_file').on('click', (e) => { uploadFiles(e) });
         jQuery('.retry').on('click', () => {
             jQuery('#file_zip').hide();
@@ -230,102 +225,68 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
 
 
         })
-        jQuery('#inline_select_from').on('change', (e) => {
-            var value = jQuery(e.target).val();
-            if(value == 'crh-cyrl') {
-                jQuery('#inline_select_to').val('crh-latn')
-            } else {
-                jQuery('#inline_select_to').val('crh-cyrl')
-            }
-            transliterate(true)
-        })
-        jQuery('#inline_select_to').on('change', (e) => {
-            var value = jQuery(e.target).val();
-            if(value == 'crh-cyrl') {
-                jQuery('#inline_select_from').val('crh-latn')
-            } else {
-                jQuery('#inline_select_from').val('crh-cyrl')
-            }
-            transliterate(true)
-        })
-        jQuery('#switch_langs').on('click', (e) => {
-            if(jQuery('#inline_select_from').val() == 'crh-cyrl') {
-                jQuery('#inline_select_from').val('crh-latn')
-                jQuery('#inline_select_to').val('crh-cyrl')
-            } else {
-                jQuery('#inline_select_from').val('crh-cyrl')
-                jQuery('#inline_select_to').val('crh-latn')
-            }
-            transliterate(true)
-        })
         jQuery('.copy-to-clip').on('click', (e) => { copyToClipboard(e) });
-        jQuery('.clear').on('click', (e) => { jQuery(e.target).closest('.grow-wrap').find('textarea').val('');jQuery("#translit_out").val(""); transliterate() });
+        jQuery('.clear').on('click', () => {
+            jQuery('#translit_inp').val('');
+            jQuery('#translit_out').val('');
+            transliterate(true);
+        });
 
     }
 
-    function transliterate(ignore = false) {
-        var value = jQuery('#translit_inp').val()
-        if(!ignore){
-            if(value.length > 0){
-                var firstLetter = Array.from(value)[0];
-                if(firstLetter.search(/[а-яА-ЯёЁ]/i) > -1){
-                    jQuery('#inline_select_from').val('crh-cyrl')
-                    jQuery('#inline_select_to').val('crh-latn')
-                } else {
-                    jQuery('#inline_select_from').val('crh-latn')
-                    jQuery('#inline_select_to').val('crh-cyrl')
-                }
-            }
-        }
+    // ---- Inline transliteration: Cyrillic -> Latin only ----
+    // Debounced so we don't fire a server request on every keystroke (A1),
+    // and we abort any in-flight request before starting a new one to avoid
+    // out-of-order responses overwriting the latest result (A2).
+    var translitTimer = null;
+    var historyTimer = null;
+    var translitXhr = null;
+    var TRANSLIT_DELAY = 200;
 
+    function transliterate(immediate){
+        runTranslit('#translit_inp', '#translit_out', '#out_wrap', immediate);
+    }
+    function transliterate2(immediate){
+        runTranslit('#fullscreenInput', '#fullscreenOutput', null, immediate);
+    }
+    function runTranslit(inSel, outSel, wrapSel, immediate) {
+        var value = jQuery(inSel).val();
         var letterCount = value.replace(/\s+/g, '').length;
-        const params = new URLSearchParams(window.location.search);
-        params.set("text", jQuery('#translit_inp').val());
-        params.set("lang",jQuery('#inline_select_from').val() );
-        params.set("lang2",jQuery('#inline_select_to').val() );
-        window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
         jQuery('.char-counter').html(letterCount+"/5000 <?php echo JText::_('MOD_CHARS'); ?>");
-        jQuery.ajax({
+        scheduleHistory(value);
+        if(translitTimer){ clearTimeout(translitTimer); }
+        translitTimer = setTimeout(function() {
+            doTranslit(outSel, wrapSel, value);
+        }, immediate ? 0 : TRANSLIT_DELAY);
+    }
+    function doTranslit(outSel, wrapSel, value) {
+        if(translitXhr){ translitXhr.abort(); }
+        if(wrapSel){ jQuery(wrapSel).addClass('is-loading'); }
+        translitXhr = jQuery.ajax({
             url: "/index.php?option=com_ajax&module=translit&method=transliterate&format=json",
             type: "POST",
-            data: {text: value, toVariant: jQuery('#inline_select_to').val()},
+            data: {text: value, toVariant: 'crh-latn'},
             success: function (response){
-                jQuery('#translit_out').val(response.data.text);
+                jQuery(outSel).val(response.data.text);
                 return true
+            },
+            complete: function (){
+                if(wrapSel){ jQuery(wrapSel).removeClass('is-loading'); }
+                translitXhr = null;
             }
         });
     }
-    function transliterate2(ignore = false) {
-        var value = jQuery('#fullscreenInput').val()
-        if(!ignore){
-            if(value.length > 0){
-                var firstLetter = Array.from(value)[0];
-                if(firstLetter.search(/[а-яА-ЯёЁ]/i) > -1){
-                    jQuery('#inline_select_from').val('crh-cyrl')
-                    jQuery('#inline_select_to').val('crh-latn')
-                } else {
-                    jQuery('#inline_select_from').val('crh-latn')
-                    jQuery('#inline_select_to').val('crh-cyrl')
-                }
-            }
-        }
-
-        var letterCount = value.replace(/\s+/g, '').length;
-        const params = new URLSearchParams(window.location.search);
-        params.set("text", jQuery('#fullscreenInput').val());
-        params.set("lang",jQuery('#inline_select_from').val() );
-        params.set("lang2",jQuery('#inline_select_to').val() );
-        window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-        jQuery('.char-counter').html(letterCount+"/5000 <?php echo JText::_('MOD_CHARS'); ?>");
-        jQuery.ajax({
-            url: "/index.php?option=com_ajax&module=translit&method=transliterate&format=json",
-            type: "POST",
-            data: {text: value, toVariant: jQuery('#inline_select_to').val()},
-            success: function (response){
-                jQuery('#fullscreenOutput').val(response.data.text);
-                return true
-            }
-        });
+    // Update the shareable URL (?text=&lang=&lang2=) on a separate debounce so
+    // history.replaceState() does not run on every keystroke (A4).
+    function scheduleHistory(value){
+        if(historyTimer){ clearTimeout(historyTimer); }
+        historyTimer = setTimeout(function(){
+            const params = new URLSearchParams(window.location.search);
+            params.set("text", value);
+            params.set("lang", "crh-cyrl");
+            params.set("lang2", "crh-latn");
+            window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+        }, 400);
     }
 
     function updateTimer(part){
@@ -684,6 +645,10 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         bottom: 10px;
         right: 20px;
         color: gray;
+        min-width: 9ch;
+        text-align: right;
+        font-style: normal;
+        font-variant-numeric: tabular-nums;
     }
     .grow-wrap .clear{
         position: absolute;
@@ -786,10 +751,43 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
     .translit-main #translit_out{
         background: #f9f9f9;
         height: 100%;
+        min-height: 350px;
         border: 1px solid lightgray;
         border-radius: 4px;
         padding: 0.375rem 1.25rem;
 
+    }
+    /* Reserve space for Font Awesome glyphs so the icons don't shift the
+       surrounding controls while the icon font is still loading (B6). */
+    .translit-main .fa{
+        display: inline-block;
+        text-align: center;
+    }
+    .translit-main .fa-lg{
+        min-width: 1.28571429em;
+    }
+    /* Static direction labels / arrow that replace the old language selects. */
+    .translit-lang-label{
+        font-weight: bold;
+        height: 40px;
+        line-height: 40px;
+        margin: 10px 0;
+    }
+    .translit-arrow{
+        justify-content: center;
+        color: #0f97df;
+    }
+    /* Loading spinner shown inside the output field while a request is in
+       flight, so a slow server response does not look frozen (C12). */
+    .grow-wrap .translit-spinner{
+        position: absolute;
+        top: 10px;
+        left: 20px;
+        color: #0f97df;
+        display: none;
+    }
+    .grow-wrap.is-loading .translit-spinner{
+        display: inline-block;
     }
 
     .translit-main button{
