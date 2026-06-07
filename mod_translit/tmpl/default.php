@@ -756,7 +756,7 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
         list-style: none;
     }
     .grow-wrap::after {
-        /* Note the weird space! Needed to preventy jumpy behavior */
+        /* Note the weird space! Needed to prevent jumpy behavior */
         content: attr(data-replicated-value) " ";
 
         /* This is how textarea text behaves */
@@ -939,6 +939,8 @@ $to   = in_array($lang2, $variants, true) ? $lang2 : 'crh-latn';
 </script>
 <?php
     if(!empty($text)){
+        // When the page is opened from a shared link the input is pre-filled server-side;
+        // defer the first transliterate() call so jQuery and the inline handlers are ready.
         echo "
         <script>
         setTimeout(function() {
