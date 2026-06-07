@@ -1,0 +1,9 @@
+# Composer-generated dependencies (run `composer install` in mod_translit/translit)
+mod_translit/translit/vendor/
+
+# Runtime job working directory
+media/docs/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
