@@ -161,7 +161,7 @@ mod_translit/
 │   ├── mod_translit.css
 │   └── mod_translit.js
 ├── language/
-│   ├── en-GB/ uk-UA/ tr-TR/   # *.ini (front-end) and *.sys.ini (admin)
+│   ├── en-GB/ uk-UA/ tr-TR/   # *.ini (front-end) and *.sys.ini (admin); tr-TR = Crimean Tatar Latin
 ├── tmpl/
 │   └── default.php           # Markup + inline JS/CSS for the widget
 └── translit/
@@ -175,7 +175,8 @@ mod_translit/
 
 UI strings live in `language/<tag>/<tag>.mod_translit.ini`; the admin name and
 description live in the matching `.sys.ini`. Bundled languages: **en-GB**, **uk-UA**,
-**tr-TR**. To add a language:
+and **tr-TR** (the `tr-TR` tag carries **Crimean Tatar Latin** / crh-Latn strings,
+not Turkish). To add a language:
 
 1. Create `language/<tag>/<tag>.mod_translit.ini` and `.sys.ini` with the same keys
    as `en-GB` (see the full list of keys used in `tmpl/default.php`).
